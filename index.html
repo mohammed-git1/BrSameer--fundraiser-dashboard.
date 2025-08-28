@@ -47,42 +47,52 @@
   </div>
 
   <script>
-    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQivThcyb5au9uKLP364swkmGwkM4Dtdy5uOuN8G6xxDJS2q1nnhUxjaBaPWj_SrOJPcGaU-Sa4-P9C/pub?output=csv"; // replace with your CSV link
+    const sheetURL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQivThcyb5au9uKLP364swkmGwkM4Dtdy5uOuN8G6xxDJS2q1nnhUxjaBaPWj_SrOJPcGaU-Sa4-P9C/pub?output=csv";
 
-    Papa.parse(sheetURL, {
-      download: true,
-      header: true,
-      complete: function(results) {
-        const data = results.data.filter(row => row.Date && row.Amount);
-        const labels = data.map(row => row.Date);
-        const amounts = data.map(row => Number(row.Amount));
+    function updateChart(data) {
+      const filtered = data.filter(row => row.Date && row.Amount);
+      const labels = filtered.map(r => r.Date);
+      const amounts = filtered.map(r => Number(r.Amount));
+      const total = amounts.reduce((a, b) => a + b, 0);
+      document.getElementById("total").textContent = total.toLocaleString();
 
-        const total = amounts.reduce((a, b) => a + b, 0);
-        document.getElementById("total").textContent = total.toLocaleString();
+      const ctx = document.getElementById("fundraiserChart").getContext("2d");
+      if (window.chart) window.chart.destroy();
+      window.chart = new Chart(ctx, {
+        type: "line",
+        data: { 
+          labels, 
+          datasets: [{
+            label: "Donations",
+            data: amounts,
+            borderColor: "#3498db",
+            backgroundColor: "rgba(52,152,219,0.4)",
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: { responsive: true }
+      });
+    }
 
-        const ctx = document.getElementById("fundraiserChart").getContext("2d");
-        new Chart(ctx, {
-          type: "line", // change to "pie" if you want a pie chart
-          data: {
-            labels: labels,
-            datasets: [{
-              label: "Donations",
-              data: amounts,
-              borderColor: "#3498db",
-              backgroundColor: "rgba(52,152,219,0.4)",
-              fill: true,
-              tension: 0.3
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { display: true }
-            }
-          }
-        });
-      }
+const sheetJSONURL = "YOUR_WEB_APP_URL_HERE"; // the Apps Script web app URL
+
+function fetchData() {
+  fetch(sheetJSONURL)
+    .then(res => res.json())
+    .then(data => {
+      localStorage.setItem("fundraiserData", JSON.stringify(data));
+      updateChart(data);
     });
+}
+
+fetchData();
+setInterval(fetchData, 5000); // refresh every 5 seconds
+
+
+    fetchData();
+    setInterval(fetchData, 30000); // refresh every 30 seconds
   </script>
 </body>
 </html>
+
